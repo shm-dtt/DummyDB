@@ -11,7 +11,7 @@ export function Footer() {
       <span>
         Made by{" "}
         <Link
-          href="https://github.com/shm-dtt"
+          href="https://github.com/ghoshsoham71"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline"
