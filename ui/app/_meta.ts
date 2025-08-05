@@ -1,10 +1,15 @@
 const meta = {
   index: {
-    display: 'hidden'
+    type: "page",
+    title: "Home",
   },
   generate: {
-    display: 'hidden'
-  }
+    type: "page",
+    title: "Get Started",
+  },
+  docs: {
+    type: "page",
+  },
 };
 
 export default meta;

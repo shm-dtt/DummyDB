@@ -1,50 +1,50 @@
-import { Layout, Navbar } from 'nextra-theme-docs'
-import { Banner, Head } from 'nextra/components'
-import { getPageMap } from 'nextra/page-map'
-import 'nextra-theme-docs/style.css'
-import { Footer } from '@/components/Footer'
- 
+import { Layout, Navbar } from "nextra-theme-docs";
+import { getPageMap } from "nextra/page-map";
+import { Footer } from "@/components/Footer";
+import { ModeToggle } from "@/components/ModeToggle";
+
 export const metadata = {
   // Define your metadata here
   // For more information on metadata API, see: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
-}
- 
-const banner = <Banner storageKey="some-key">Nextra 4.0 is released 🎉</Banner>
+};
+
 const navbar = (
-  <Navbar
-    logo={<b>Nextra</b>}
-    // ... Your additional navbar options
-  />
-)
-const footer = <Footer></Footer>
- 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  <Navbar logo={<b>DummyDB</b>}>
+    <ModeToggle />
+  </Navbar>
+);
+const footer = <Footer></Footer>;
+const feedback = {
+  // content: null,
+  labels: "feedback",
+  // ... Your additional feedback options
+  // For more information on feedback API, see: https://nextra.vercel.app/docs/feedback
+};
+const sidebar = {
+  toggleButton: false,
+};
+
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html
-      // Not required, but good for SEO
-      lang="en"
-      // Required to be set
-      dir="ltr"
-      // Suggested by `next-themes` package https://github.com/pacocoursey/next-themes#with-app
-      suppressHydrationWarning
-    >
-      <Head
-      // ... Your additional head options
+    <>
+      <Layout
+        navbar={navbar}
+        pageMap={await getPageMap()}
+        docsRepositoryBase="https://github.com/ghoshsoham71/DummyDB/tree/main/ui"
+        footer={footer}
+        // editLink={null}
+        feedback={feedback}
+        darkMode={false}
+        sidebar={sidebar}
+
+        // ... Your additional layout options
       >
-        {/* Your additional tags should be passed as `children` of `<Head>` element */}
-      </Head>
-      <body>
-        <Layout
-          banner={banner}
-          navbar={navbar}
-          pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/shuding/nextra/tree/main/docs"
-          footer={footer}
-          // ... Your additional layout options
-        >
-          {children}
-        </Layout>
-      </body>
-    </html>
-  )
+        {children}
+      </Layout>
+    </>
+  );
 }

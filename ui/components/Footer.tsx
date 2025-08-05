@@ -1,12 +1,6 @@
 import { GitBranch } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Footer() {
   return (
@@ -20,48 +14,18 @@ export function Footer() {
           href="https://github.com/shm-dtt"
           target="_blank"
           rel="noopener noreferrer"
+          className="hover:underline"
         >
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="link">@shm-dtt</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-70">
-              <div className="flex justify-center gap-4">
-                <Avatar>
-                  <AvatarImage src="https://github.com/shm-dtt.png" />
-                  <AvatarFallback>SD</AvatarFallback>
-                </Avatar>
-                <div className="space-y-1">
-                  <h4 className="text-sm">@shm-dtt</h4>
-                  <p className="text-sm">Software Engineer @nokia.</p>
-                </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          @ghoshsoham71
         </Link>{" "}
         and{" "}
         <Link
           href="https://github.com/shm-dtt"
           target="_blank"
           rel="noopener noreferrer"
+          className="hover:underline"
         >
-          <HoverCard>
-            <HoverCardTrigger asChild>
-              <Button variant="link">@ghoshsoham71</Button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-70">
-              <div className="flex justify-center gap-4">
-                <Avatar>
-                  <AvatarImage src="https://github.com/ghoshsoham71.png" />
-                  <AvatarFallback>SG</AvatarFallback>
-                </Avatar>
-                <div className="space-y-1">
-                  <h4 className="text-sm">@ghoshsoham71</h4>
-                  <p className="text-sm">Software Engineer @TCS.</p>
-                </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+          @shm-dtt
         </Link>
       </span>
       <Link
