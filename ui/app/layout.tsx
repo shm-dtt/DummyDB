@@ -54,7 +54,7 @@ export default async function RootLayout({
       >
         {/* Your additional tags should be passed as `children` of `<Head>` element */}
       </Head>
-      <body className="antialiased !font-sans">
+      <body className={`${geistSans.variable} ${geistMono.variable} font-geist-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
