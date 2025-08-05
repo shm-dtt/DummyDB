@@ -28,16 +28,6 @@ export function Footer() {
           @shm-dtt
         </Link>
       </span>
-      <Link
-        href="https://github.com/ghoshsoham71/DummyDB"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button variant={"outline"} size={"sm"}>
-          <GitBranch size={18} />
-          GitHub
-        </Button>
-      </Link>
     </footer>
   );
 }
