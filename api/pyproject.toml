@@ -7,7 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "aiofiles>=24.1.0",
     "fastapi>=0.116.1",
-<<<<<<< HEAD
     "loguru>=0.7.3",
     "psycopg2>=2.9.10",
     "pydantic>=2.11.7",
@@ -18,13 +17,6 @@ dependencies = [
     "slowapi>=0.1.9",
     "sqlparse>=0.5.3",
     "supabase>=2.17.0",
-=======
-    "pydantic>=2.11.7",
-    "python-dotenv>=1.1.1",
-    "python-multipart>=0.0.20",
-    "slowapi>=0.1.9",
-    "sqlparse>=0.5.3",
->>>>>>> origin/main
     "uvicorn>=0.35.0",
 ]
 

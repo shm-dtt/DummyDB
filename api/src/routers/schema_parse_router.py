@@ -2,7 +2,6 @@ import json
 import os
 import time
 import tempfile
-<<<<<<< HEAD
 import logging
 from typing import Optional, Dict, Any, List
 from pathlib import Path
@@ -10,18 +9,11 @@ from datetime import datetime, timezone
 import hashlib
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Query, Depends
-=======
-from typing import Optional, Dict, Any
-from pathlib import Path
-
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File
->>>>>>> origin/main
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from src.lib.schemas import ParseResponse, HealthResponse, ParseRequest
 from src.utils.schema_parse import SQLSchemaParser
-<<<<<<< HEAD
 from src.lib.database import insert_schema
 
 # Configure logging
@@ -36,15 +28,6 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB limit
 
 # Create router with tags for better API documentation
 router = APIRouter(tags=["Schema Parser"])
-=======
-
-# Global storage for parsed schemas
-PARSED_SCHEMAS: Dict[str, Any] = {}
-SCHEMA_COUNTER = 0
-
-# Create router
-router = APIRouter()
->>>>>>> origin/main
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -52,7 +35,6 @@ limiter = Limiter(key_func=get_remote_address)
 # Initialize parser instance
 parser_instance = SQLSchemaParser()
 
-<<<<<<< HEAD
 class SchemaManager:
     """Enhanced schema management with cleanup and validation"""
     
@@ -124,48 +106,25 @@ async def health_check(request: Request):
             "total_storage_bytes": total_size,
             "max_file_size": MAX_FILE_SIZE
         }
-=======
-@router.get("/health", response_model=HealthResponse)
-@limiter.limit("100/minute")
-async def health_check(request: Request):
-    """Health check endpoint with schema storage info"""
-    return HealthResponse(
-        status="healthy",
-        version="1.0.0",
-        schemas_in_memory=len(PARSED_SCHEMAS)
->>>>>>> origin/main
     )
 
 @router.post("/parse", response_model=ParseResponse)
 @limiter.limit("10/minute")
 async def parse_sql_schema(
     request: Request,
-<<<<<<< HEAD
     file: UploadFile = File(..., description="SQL file to parse (.sql extension required)"),
     save_to_disk: bool = Query(True, description="Whether to save JSON schema to disk"),
     overwrite_existing: bool = Query(False, description="Overwrite existing schema with same content hash")
-=======
-    file: UploadFile = File(..., description="SQL file to parse (.sql extension required)")
->>>>>>> origin/main
 ) -> ParseResponse:
     """
     Parse uploaded SQL file and store schema in local JSON file and memory
     
-<<<<<<< HEAD
     Enhanced with:
     - File size validation
     - Content deduplication
     - Better error handling
     - Optional disk saving
     - Schema validation
-=======
-    - **file**: SQL file to parse (.sql extension required)
-    
-    Returns:
-    - Schema ID for accessing the parsed schema
-    - File path where JSON schema is saved
-    - Processing statistics
->>>>>>> origin/main
     """
     global SCHEMA_COUNTER
     start_time = time.time()
@@ -178,7 +137,6 @@ async def parse_sql_schema(
         )
     
     try:
-<<<<<<< HEAD
         # Read and validate file content
         content = await file.read()
         
@@ -324,81 +282,6 @@ async def parse_sql_schema(
         processing_time = time.time() - start_time
         logger.error(f"Schema parsing failed: {str(e)}")
         
-=======
-        # Read file content
-        content = await file.read()
-        sql_content = content.decode('utf-8')
-        
-        # Create temporary SQL file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as temp_sql_file:
-            temp_sql_file.write(sql_content)
-            temp_sql_path = temp_sql_file.name
-        
-        try:
-            # Parse the SQL file
-            schema = parser_instance.parse_sql_file(temp_sql_path, output_dir="./schemas")
-            
-            # Generate unique schema ID
-            SCHEMA_COUNTER += 1
-            schema_id = f"schema_{SCHEMA_COUNTER}_{int(time.time())}"
-            
-            # Store schema in memory for global access
-            PARSED_SCHEMAS[schema_id] = {
-                "schema": schema,
-                "filename": file.filename,
-                "created_at": time.time(),
-                "file_size": len(content)
-            }
-            
-            # Determine JSON file path
-            base_filename = Path(file.filename).stem
-            json_filename = f"{base_filename}_schema.json"
-            
-            # Ensure schemas directory exists
-            os.makedirs("./schemas", exist_ok=True)
-            json_file_path = os.path.join("./schemas", json_filename)
-            
-            # Save schema to local JSON file
-            with open(json_file_path, 'w', encoding='utf-8') as json_file:
-                json.dump(schema, json_file, indent=2)
-            
-            processing_time = time.time() - start_time
-            
-            # Calculate statistics
-            stats = {
-                "databases": len(schema.get("databases", [])),
-                "tables": sum(len(db.get("tables", [])) for db in schema.get("databases", [])),
-                "columns": sum(
-                    len(table.get("attributes", []))
-                    for db in schema.get("databases", [])
-                    for table in db.get("tables", [])
-                ),
-                "file_size": len(content),
-                "schema_id": schema_id
-            }
-            
-            return ParseResponse(
-                success=True,
-                schema_id=schema_id,
-                message=f"Schema parsed and saved successfully. Access via schema ID: {schema_id}",
-                processing_time=processing_time,
-                statistics=stats,
-                file_path=json_file_path
-            )
-            
-        finally:
-            # Clean up temporary SQL file
-            if os.path.exists(temp_sql_path):
-                os.unlink(temp_sql_path)
-        
-    except UnicodeDecodeError:
-        raise HTTPException(
-            status_code=400,
-            detail="File must be valid UTF-8 encoded text"
-        )
-    except Exception as e:
-        processing_time = time.time() - start_time
->>>>>>> origin/main
         return ParseResponse(
             success=False,
             schema_id=None,
@@ -410,7 +293,6 @@ async def parse_sql_schema(
 
 @router.get("/schemas")
 @limiter.limit("50/minute")
-<<<<<<< HEAD
 async def list_schemas(
     request: Request,
     limit: int = Query(50, ge=1, le=100, description="Maximum number of schemas to return"),
@@ -450,33 +332,20 @@ async def list_schemas(
     
     schema_list = []
     for schema_id, schema_data in paginated_items:
-=======
-async def list_schemas(request: Request):
-    """List all schemas stored in memory"""
-    schema_list = []
-    
-    for schema_id, schema_data in PARSED_SCHEMAS.items():
->>>>>>> origin/main
         schema_info = {
             "schema_id": schema_id,
             "filename": schema_data["filename"],
             "created_at": schema_data["created_at"],
             "file_size": schema_data["file_size"],
-<<<<<<< HEAD
             "content_hash": schema_data.get("content_hash", ""),
             "databases": len(schema_data["schema"].get("databases", [])),
             "tables": sum(len(db.get("tables", [])) for db in schema_data["schema"].get("databases", [])),
             "metadata": schema_data.get("metadata", {})
-=======
-            "databases": len(schema_data["schema"].get("databases", [])),
-            "tables": sum(len(db.get("tables", [])) for db in schema_data["schema"].get("databases", []))
->>>>>>> origin/main
         }
         schema_list.append(schema_info)
     
     return {
         "schemas": schema_list,
-<<<<<<< HEAD
         "pagination": {
             "total_schemas": len(filtered_schemas),
             "returned_count": len(schema_list),
@@ -489,14 +358,10 @@ async def list_schemas(request: Request):
             "sort_by": sort_by,
             "sort_order": sort_order
         }
-=======
-        "total_schemas": len(schema_list)
->>>>>>> origin/main
     }
 
 @router.get("/schemas/{schema_id}")
 @limiter.limit("50/minute")
-<<<<<<< HEAD
 async def get_schema(
     request: Request, 
     schema_id: str,
@@ -504,10 +369,6 @@ async def get_schema(
     format_output: bool = Query(False, description="Format output for better readability")
 ):
     """Get specific schema by ID with enhanced options"""
-=======
-async def get_schema(request: Request, schema_id: str):
-    """Get specific schema by ID"""
->>>>>>> origin/main
     if schema_id not in PARSED_SCHEMAS:
         raise HTTPException(
             status_code=404,
@@ -515,7 +376,6 @@ async def get_schema(request: Request, schema_id: str):
         )
     
     schema_data = PARSED_SCHEMAS[schema_id]
-<<<<<<< HEAD
     
     response = {
         "schema_id": schema_id,
@@ -568,17 +428,6 @@ async def get_schema(request: Request, schema_id: str):
         }
     
     return response
-=======
-    return {
-        "schema_id": schema_id,
-        "schema": schema_data["schema"],
-        "metadata": {
-            "filename": schema_data["filename"],
-            "created_at": schema_data["created_at"],
-            "file_size": schema_data["file_size"]
-        }
-    }
->>>>>>> origin/main
 
 @router.delete("/schemas/{schema_id}")
 @limiter.limit("20/minute")
@@ -592,7 +441,6 @@ async def delete_schema(request: Request, schema_id: str):
     
     deleted_schema = PARSED_SCHEMAS.pop(schema_id)
     
-<<<<<<< HEAD
     # Optionally delete file from disk
     file_path = deleted_schema.get("file_path")
     if file_path and os.path.exists(file_path):
@@ -602,13 +450,10 @@ async def delete_schema(request: Request, schema_id: str):
         except Exception as e:
             logger.warning(f"Failed to delete schema file {file_path}: {e}")
     
-=======
->>>>>>> origin/main
     return {
         "message": f"Schema '{schema_id}' deleted successfully",
         "deleted_schema_info": {
             "filename": deleted_schema["filename"],
-<<<<<<< HEAD
             "created_at": deleted_schema["created_at"],
             "file_path": file_path
         }
@@ -736,73 +581,16 @@ def get_latest_schema() -> Optional[Dict[str, Any]]:
     if not PARSED_SCHEMAS:
         return None
     
-=======
-            "created_at": deleted_schema["created_at"]
-        }
-    }
-
-# Utility functions for accessing schemas throughout the codebase
-
-def get_schema_by_id(schema_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Get schema by ID - can be used throughout the codebase
-    
-    Args:
-        schema_id: The schema identifier
-        
-    Returns:
-        Schema dictionary or None if not found
-    """
-    schema_data = PARSED_SCHEMAS.get(schema_id)
-    return schema_data["schema"] if schema_data else None
-
-def get_all_schemas() -> Dict[str, Dict[str, Any]]:
-    """
-    Get all schemas - can be used throughout the codebase
-    
-    Returns:
-        Dictionary mapping schema IDs to schema data
-    """
-    return PARSED_SCHEMAS.copy()
-
-def get_latest_schema() -> Optional[Dict[str, Any]]:
-    """
-    Get the most recently parsed schema
-    
-    Returns:
-        Latest schema dictionary or None if no schemas exist
-    """
-    if not PARSED_SCHEMAS:
-        return None
-    
-    # Find schema with highest timestamp
->>>>>>> origin/main
     latest_id = max(PARSED_SCHEMAS.keys(), key=lambda x: PARSED_SCHEMAS[x]["created_at"])
     return PARSED_SCHEMAS[latest_id]["schema"]
 
 def search_schemas_by_table(table_name: str) -> Dict[str, Dict[str, Any]]:
-<<<<<<< HEAD
     """Search for schemas containing a specific table name (case-insensitive)"""
-=======
-    """
-    Search for schemas containing a specific table name
-    
-    Args:
-        table_name: Name of the table to search for
-        
-    Returns:
-        Dictionary of matching schemas
-    """
->>>>>>> origin/main
     matching_schemas = {}
     
     for schema_id, schema_data in PARSED_SCHEMAS.items():
         schema = schema_data["schema"]
         
-<<<<<<< HEAD
-=======
-        # Check if any database contains the table
->>>>>>> origin/main
         for db in schema.get("databases", []):
             for table in db.get("tables", []):
                 if table.get("name", "").lower() == table_name.lower():
@@ -812,7 +600,6 @@ def search_schemas_by_table(table_name: str) -> Dict[str, Dict[str, Any]]:
             if schema_id in matching_schemas:
                 break
     
-<<<<<<< HEAD
     logger.info(f"Found {len(matching_schemas)} schemas containing table '{table_name}'")
     return matching_schemas
 
@@ -842,47 +629,26 @@ def search_schemas_by_column(column_name: str) -> Dict[str, List[Dict[str, Any]]
 
 def get_schema_statistics() -> Dict[str, Any]:
     """Get comprehensive statistics for all stored schemas"""
-=======
-    return matching_schemas
-
-def get_schema_statistics() -> Dict[str, Any]:
-    """
-    Get overall statistics for all stored schemas
-    
-    Returns:
-        Dictionary containing aggregate statistics
-    """
->>>>>>> origin/main
     if not PARSED_SCHEMAS:
         return {
             "total_schemas": 0,
             "total_databases": 0,
             "total_tables": 0,
-<<<<<<< HEAD
             "total_attributes": 0,
             "total_storage_bytes": 0
-=======
-            "total_attributes": 0
->>>>>>> origin/main
         }
     
     total_databases = 0
     total_tables = 0
     total_attributes = 0
-<<<<<<< HEAD
     total_storage = 0
     constraint_stats = {}
     data_type_stats = {}
-=======
->>>>>>> origin/main
     
     for schema_data in PARSED_SCHEMAS.values():
         schema = schema_data["schema"]
         databases = schema.get("databases", [])
-<<<<<<< HEAD
         total_storage += schema_data.get("file_size", 0)
-=======
->>>>>>> origin/main
         
         total_databases += len(databases)
         
@@ -891,7 +657,6 @@ def get_schema_statistics() -> Dict[str, Any]:
             total_tables += len(tables)
             
             for table in tables:
-<<<<<<< HEAD
                 attributes = table.get("attributes", [])
                 total_attributes += len(attributes)
                 
@@ -903,15 +668,11 @@ def get_schema_statistics() -> Dict[str, Any]:
                     # Count constraints
                     for constraint in attr.get("constraints", []):
                         constraint_stats[constraint] = constraint_stats.get(constraint, 0) + 1
-=======
-                total_attributes += len(table.get("attributes", []))
->>>>>>> origin/main
     
     return {
         "total_schemas": len(PARSED_SCHEMAS),
         "total_databases": total_databases,
         "total_tables": total_tables,
-<<<<<<< HEAD
         "total_attributes": total_attributes,
         "total_storage_bytes": total_storage,
         "constraint_distribution": constraint_stats,
@@ -921,7 +682,4 @@ def get_schema_statistics() -> Dict[str, Any]:
             "max_schemas_limit": MAX_SCHEMAS_IN_MEMORY,
             "usage_percentage": (len(PARSED_SCHEMAS) / MAX_SCHEMAS_IN_MEMORY) * 100
         }
-=======
-        "total_attributes": total_attributes
->>>>>>> origin/main
     }

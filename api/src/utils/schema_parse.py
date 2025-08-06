@@ -2,11 +2,7 @@ import re
 import json
 import sys
 import os
-<<<<<<< HEAD
 from typing import Dict, List, Optional, Any, Union
-=======
-from typing import Dict, List, Optional, Any
->>>>>>> origin/main
 from pathlib import Path
 
 class SQLSchemaParser:
@@ -15,11 +11,7 @@ class SQLSchemaParser:
         self.current_database = None
         self.parsed_schema = None
         
-<<<<<<< HEAD
     def parse_sql_file(self, sql_file_path: str, output_dir: Optional[str] = None) -> Dict[str, Any]:
-=======
-    def parse_sql_file(self, sql_file_path: str, output_dir: str) -> Dict[str, Any]:
->>>>>>> origin/main
         """
         Parse SQL file and generate JSON schema
         
@@ -30,7 +22,6 @@ class SQLSchemaParser:
         Returns:
             Dict containing parsed schema
         """
-<<<<<<< HEAD
         # Convert to Path objects for better path handling
         sql_path = Path(sql_file_path)
         
@@ -44,20 +35,12 @@ class SQLSchemaParser:
             # Try with different encoding if UTF-8 fails
             with open(sql_path, 'r', encoding='latin-1') as file:
                 sql_content = file.read()
-=======
-        if not os.path.exists(sql_file_path):
-            raise FileNotFoundError(f"SQL file not found: {sql_file_path}")
-            
-        with open(sql_file_path, 'r', encoding='utf-8') as file:
-            sql_content = file.read()
->>>>>>> origin/main
             
         # Parse the SQL content
         schema = self._parse_sql_content(sql_content)
         
         # Determine output path
         if output_dir is None:
-<<<<<<< HEAD
             output_path = sql_path.parent
         else:
             output_path = Path(output_dir)
@@ -71,16 +54,6 @@ class SQLSchemaParser:
         # Save to JSON file
         with open(json_file_path, 'w', encoding='utf-8') as json_file:
             json.dump(schema, json_file, indent=2, ensure_ascii=False)
-=======
-            output_dir = os.path.dirname(sql_file_path)
-            
-        sql_filename = Path(sql_file_path).stem
-        json_file_path = os.path.join(output_dir, f"{sql_filename}_schema.json")
-        
-        # Save to JSON file
-        with open(json_file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(schema, json_file, indent=2)
->>>>>>> origin/main
             
         print(f"Schema parsed and saved to: {json_file_path}")
         
@@ -103,7 +76,6 @@ class SQLSchemaParser:
             if not statement:
                 continue
                 
-<<<<<<< HEAD
             # Handle different statement types
             statement_upper = statement.upper()
             if statement_upper.startswith('USE '):
@@ -120,18 +92,10 @@ class SQLSchemaParser:
                 "tables": []
             }
             
-=======
-            if statement.upper().startswith('USE '):
-                self._parse_use_statement(statement)
-            elif statement.upper().startswith('CREATE TABLE'):
-                self._parse_create_table_statement(statement)
-                
->>>>>>> origin/main
         return {"databases": list(self.databases.values())}
     
     def _clean_sql_content(self, content: str) -> str:
         """Clean SQL content by removing comments"""
-<<<<<<< HEAD
         # Remove single-line comments (-- style)
         content = re.sub(r'--.*$', '', content, flags=re.MULTILINE)
         
@@ -141,30 +105,20 @@ class SQLSchemaParser:
         # Remove hash comments (# style, used in MySQL)
         content = re.sub(r'#.*$', '', content, flags=re.MULTILINE)
         
-=======
-        # Remove single-line comments
-        content = re.sub(r'--.*$', '', content, flags=re.MULTILINE)
-        # Remove multi-line comments
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
->>>>>>> origin/main
         return content
     
     def _split_sql_statements(self, content: str) -> List[str]:
         """Split SQL content into individual statements"""
         statements = []
         current_statement = []
-<<<<<<< HEAD
         in_string = False
         string_char = None
-=======
->>>>>>> origin/main
         
         lines = content.split('\n')
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-<<<<<<< HEAD
             
             # Handle string literals to avoid splitting on semicolons inside strings
             i = 0
@@ -213,23 +167,6 @@ class SQLSchemaParser:
     def _parse_use_statement(self, statement: str):
         """Parse USE statement to set current database"""
         match = re.search(r'USE\s+`?(\w+)`?', statement, re.IGNORECASE)
-=======
-                
-            current_statement.append(line)
-            
-            if line.endswith(';'):
-                statements.append(' '.join(current_statement))
-                current_statement = []
-                
-        if current_statement:
-            statements.append(' '.join(current_statement))
-            
-        return statements
-    
-    def _parse_use_statement(self, statement: str):
-        """Parse USE statement to set current database"""
-        match = re.search(r'USE\s+(\w+)', statement, re.IGNORECASE)
->>>>>>> origin/main
         if match:
             db_name = match.group(1)
             self.current_database = db_name
@@ -241,7 +178,6 @@ class SQLSchemaParser:
     
     def _parse_create_table_statement(self, statement: str):
         """Parse CREATE TABLE statement"""
-<<<<<<< HEAD
         # Extract table name, handling backticks and database prefixes
         table_match = re.search(r'CREATE TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:`?(\w+)`?\.)?`?(\w+)`?\s*\(', 
                                statement, re.IGNORECASE)
@@ -263,31 +199,14 @@ class SQLSchemaParser:
         if target_db not in self.databases:
             self.databases[target_db] = {
                 "name": target_db,
-=======
-        # Extract table name
-        table_match = re.search(r'CREATE TABLE\s+(\w+)\s*\(', statement, re.IGNORECASE)
-        if not table_match:
-            return
-            
-        table_name = table_match.group(1)
-        
-        # Use default database if none specified
-        if self.current_database is None:
-            self.current_database = "default"
-            self.databases[self.current_database] = {
-                "name": self.current_database,
->>>>>>> origin/main
                 "tables": []
             }
         
         # Extract table definition content
         table_content = self._extract_table_content(statement)
-<<<<<<< HEAD
         if not table_content:
             return
             
-=======
->>>>>>> origin/main
         attributes = self._parse_table_attributes(table_content)
         
         table_schema = {
@@ -295,11 +214,7 @@ class SQLSchemaParser:
             "attributes": attributes
         }
         
-<<<<<<< HEAD
         self.databases[target_db]["tables"].append(table_schema)
-=======
-        self.databases[self.current_database]["tables"].append(table_schema)
->>>>>>> origin/main
     
     def _extract_table_content(self, statement: str) -> str:
         """Extract content between parentheses in CREATE TABLE statement"""
@@ -311,7 +226,6 @@ class SQLSchemaParser:
         # Find the matching closing parenthesis
         paren_count = 0
         end_idx = start_idx
-<<<<<<< HEAD
         in_string = False
         string_char = None
         
@@ -337,29 +251,12 @@ class SQLSchemaParser:
                         break
                         
         return statement[start_idx + 1:end_idx].strip()
-=======
-        
-        for i in range(start_idx, len(statement)):
-            if statement[i] == '(':
-                paren_count += 1
-            elif statement[i] == ')':
-                paren_count -= 1
-                if paren_count == 0:
-                    end_idx = i
-                    break
-                    
-        return statement[start_idx + 1:end_idx]
->>>>>>> origin/main
     
     def _parse_table_attributes(self, table_content: str) -> List[Dict[str, Any]]:
         """Parse table attributes from table content"""
         attributes = []
         
-<<<<<<< HEAD
         # Split by commas, but be careful with nested parentheses and strings
-=======
-        # Split by commas, but be careful with nested parentheses
->>>>>>> origin/main
         column_definitions = self._split_column_definitions(table_content)
         
         primary_keys = []
@@ -370,7 +267,6 @@ class SQLSchemaParser:
             if not col_def:
                 continue
                 
-<<<<<<< HEAD
             col_def_upper = col_def.upper()
             
             # Check if it's a constraint definition
@@ -378,22 +274,11 @@ class SQLSchemaParser:
                 primary_keys.extend(self._extract_primary_key_columns(col_def))
                 continue
             elif col_def_upper.startswith('FOREIGN KEY'):
-=======
-            # Check if it's a constraint definition
-            if col_def.upper().startswith('PRIMARY KEY'):
-                primary_keys.extend(self._extract_primary_key_columns(col_def))
-                continue
-            elif col_def.upper().startswith('FOREIGN KEY'):
->>>>>>> origin/main
                 fk_info = self._extract_foreign_key_info(col_def)
                 if fk_info:
                     foreign_keys.append(fk_info)
                 continue
-<<<<<<< HEAD
             elif col_def_upper.startswith(('INDEX', 'KEY', 'UNIQUE KEY', 'UNIQUE INDEX', 'CONSTRAINT')):
-=======
-            elif col_def.upper().startswith(('INDEX', 'KEY', 'UNIQUE KEY')):
->>>>>>> origin/main
                 continue
                 
             # Parse column definition
@@ -407,25 +292,17 @@ class SQLSchemaParser:
         return attributes
     
     def _split_column_definitions(self, content: str) -> List[str]:
-<<<<<<< HEAD
         """Split column definitions by commas, handling nested parentheses and strings"""
         definitions = []
         current_def = []
         paren_count = 0
         in_string = False
         string_char = None
-=======
-        """Split column definitions by commas, handling nested parentheses"""
-        definitions = []
-        current_def = []
-        paren_count = 0
->>>>>>> origin/main
         
         i = 0
         while i < len(content):
             char = content[i]
             
-<<<<<<< HEAD
             # Handle string literals
             if not in_string and char in ('"', "'", '`'):
                 in_string = True
@@ -451,51 +328,29 @@ class SQLSchemaParser:
                     current_def = []
                 else:
                     current_def.append(char)
-=======
-            if char == '(':
-                paren_count += 1
-                current_def.append(char)
-            elif char == ')':
-                paren_count -= 1
-                current_def.append(char)
-            elif char == ',' and paren_count == 0:
-                definitions.append(''.join(current_def).strip())
-                current_def = []
->>>>>>> origin/main
             else:
                 current_def.append(char)
             
             i += 1
         
-<<<<<<< HEAD
         # Add the last definition
         if current_def:
             definition = ''.join(current_def).strip()
             if definition:
                 definitions.append(definition)
-=======
-        if current_def:
-            definitions.append(''.join(current_def).strip())
->>>>>>> origin/main
             
         return definitions
     
     def _parse_column_definition(self, col_def: str) -> Optional[Dict[str, Any]]:
         """Parse individual column definition"""
-<<<<<<< HEAD
         # Remove backticks and extra whitespace
         col_def = re.sub(r'`([^`]+)`', r'\1', col_def)
         parts = col_def.split()
         
-=======
-        # Basic pattern: column_name data_type [constraints...]
-        parts = col_def.split()
->>>>>>> origin/main
         if len(parts) < 2:
             return None
             
         column_name = parts[0]
-<<<<<<< HEAD
         data_type_full = parts[1]
         
         # Handle data types with parameters like VARCHAR(100)
@@ -506,15 +361,6 @@ class SQLSchemaParser:
             if type_match:
                 data_type = type_match.group(1)
                 type_params = type_match.group(2)
-=======
-        data_type = parts[1]
-        
-        # Handle data types with parameters like VARCHAR(100)
-        if '(' in data_type:
-            type_match = re.match(r'(\w+)\([^)]*\)', data_type)
-            if type_match:
-                data_type = type_match.group(1)
->>>>>>> origin/main
         
         attribute = {
             "name": column_name,
@@ -522,7 +368,6 @@ class SQLSchemaParser:
             "constraints": []
         }
         
-<<<<<<< HEAD
         # Add type parameters if present
         if type_params:
             attribute["type_params"] = type_params
@@ -542,8 +387,6 @@ class SQLSchemaParser:
             if default_match:
                 attribute["default"] = default_match.group(1)
         
-=======
->>>>>>> origin/main
         return attribute
     
     def _extract_primary_key_columns(self, constraint_def: str) -> List[str]:
@@ -551,39 +394,24 @@ class SQLSchemaParser:
         match = re.search(r'PRIMARY KEY\s*\(([^)]+)\)', constraint_def, re.IGNORECASE)
         if match:
             columns_str = match.group(1)
-<<<<<<< HEAD
             # Remove backticks and split by comma
             columns = [re.sub(r'`([^`]+)`', r'\1', col.strip()) for col in columns_str.split(',')]
             return [col for col in columns if col]
-=======
-            columns = [col.strip() for col in columns_str.split(',')]
-            return columns
->>>>>>> origin/main
         return []
     
     def _extract_foreign_key_info(self, constraint_def: str) -> Optional[Dict[str, str]]:
         """Extract foreign key information"""
         # Pattern: FOREIGN KEY (column) REFERENCES table(column)
         match = re.search(
-<<<<<<< HEAD
             r'FOREIGN KEY\s*\(([^)]+)\)\s+REFERENCES\s+`?(\w+)`?\s*\(([^)]+)\)',
-=======
-            r'FOREIGN KEY\s*\(([^)]+)\)\s+REFERENCES\s+(\w+)\s*\(([^)]+)\)',
->>>>>>> origin/main
             constraint_def,
             re.IGNORECASE
         )
         
         if match:
-<<<<<<< HEAD
             local_column = re.sub(r'`([^`]+)`', r'\1', match.group(1).strip())
             referenced_table = match.group(2).strip()
             referenced_column = re.sub(r'`([^`]+)`', r'\1', match.group(3).strip())
-=======
-            local_column = match.group(1).strip()
-            referenced_table = match.group(2).strip()
-            referenced_column = match.group(3).strip()
->>>>>>> origin/main
             
             return {
                 "column": local_column,
@@ -600,29 +428,20 @@ class SQLSchemaParser:
         # Apply primary key constraints
         for pk_column in primary_keys:
             if pk_column in attr_map:
-<<<<<<< HEAD
                 if "PRIMARY_KEY" not in attr_map[pk_column]["constraints"]:
                     attr_map[pk_column]["constraints"].append("PRIMARY_KEY")
-=======
-                attr_map[pk_column]["constraints"].append("PRIMARY_KEY")
->>>>>>> origin/main
         
         # Apply foreign key constraints
         for fk_info in foreign_keys:
             column_name = fk_info["column"]
             if column_name in attr_map:
                 fk_constraint = f"FOREIGN_KEY_REFERENCES_{fk_info['referenced_table']}.{fk_info['referenced_column']}"
-<<<<<<< HEAD
                 if fk_constraint not in attr_map[column_name]["constraints"]:
                     attr_map[column_name]["constraints"].append(fk_constraint)
-=======
-                attr_map[column_name]["constraints"].append(fk_constraint)
->>>>>>> origin/main
     
     def get_parsed_schema(self) -> Optional[Dict[str, Any]]:
         """Get the last parsed schema"""
         return self.parsed_schema
-<<<<<<< HEAD
     
     def print_schema_summary(self):
         """Print a summary of the parsed schema"""
@@ -647,31 +466,21 @@ class SQLSchemaParser:
                     if "type_params" in attr:
                         type_info += f"({attr['type_params']})"
                     print(f"      * {attr['name']}: {type_info} [{constraints_str}]")
-=======
->>>>>>> origin/main
 
 def main():
     """Main function for command-line usage"""
     if len(sys.argv) < 2:
         print("Usage: python schema_parse.py <sql_file_path> [output_directory]")
-<<<<<<< HEAD
         print("Example: python schema_parse.py database.sql ./output/")
         sys.exit(1)
     
     sql_file_path = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else None
-=======
-        sys.exit(1)
-    
-    sql_file_path = sys.argv[1]
-    output_dir = sys.argv[2] 
->>>>>>> origin/main
     
     try:
         parser = SQLSchemaParser()
         schema = parser.parse_sql_file(sql_file_path, output_dir)
         
-<<<<<<< HEAD
         print("\nSchema parsing completed successfully!")
         parser.print_schema_summary()
         
@@ -682,16 +491,6 @@ def main():
         print(f"Error parsing SQL file: {str(e)}")
         import traceback
         traceback.print_exc()
-=======
-        print("Schema parsing completed successfully!")
-        print(f"Found {len(schema['databases'])} database(s)")
-        
-        for db in schema['databases']:
-            print(f"  Database: {db['name']} ({len(db['tables'])} tables)")
-            
-    except Exception as e:
-        print(f"Error parsing SQL file: {str(e)}")
->>>>>>> origin/main
         sys.exit(1)
 
 if __name__ == "__main__":

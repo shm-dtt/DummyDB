@@ -11,7 +11,6 @@ from slowapi.middleware import SlowAPIMiddleware
 from src.utils.schema_parse import SQLSchemaParser
 from src.lib.schemas import ErrorResponse
 from src.routers import schema_parse_router
-<<<<<<< HEAD
 import psycopg2
 from dotenv import load_dotenv
 from loguru import logger
@@ -53,8 +52,6 @@ try:
 except Exception as e:
     logger.info(f"Failed to connect: {e}")
 
-=======
->>>>>>> origin/main
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
