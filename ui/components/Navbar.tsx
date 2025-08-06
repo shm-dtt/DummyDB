@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ModeToggle } from "./ModeToggle";
 import { Button } from "./ui/button";
+import { Search } from "nextra/components";
+import "nextra-theme-docs/style.css";
 
 export function Navbar() {
   return (
@@ -17,6 +19,7 @@ export function Navbar() {
         <Link href="/docs">
           <Button variant="outline">Docs</Button>
         </Link>
+        <Search/>
         <ModeToggle />
       </div>
     </nav>

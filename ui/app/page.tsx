@@ -1,12 +1,9 @@
-import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Footer } from "@/components/Footer";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <div className="font-sans min-h-screen flex flex-col bg-background text-foreground">
-      <Navbar />
       {/* Hero Section */}
       <main className="flex flex-1 flex-col items-center justify-center text-center gap-8 px-4">
         <h1 className="text-4xl sm:text-6xl font-bold tracking-tight mb-2">
@@ -20,7 +17,6 @@ export default function Home() {
           <Button size={"lg"}>Get Started</Button>
         </Link>
       </main>
-      <Footer />
     </div>
   );
 }
