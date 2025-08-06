@@ -11,6 +11,50 @@ from slowapi.middleware import SlowAPIMiddleware
 from src.utils.schema_parse import SQLSchemaParser
 from src.lib.schemas import ErrorResponse
 from src.routers import schema_parse_router
+<<<<<<< HEAD
+import psycopg2
+from dotenv import load_dotenv
+from loguru import logger
+
+# Load environment variables from .env
+load_dotenv()
+
+# Fetch variables
+USER = os.getenv("user")
+PASSWORD = os.getenv("password")
+HOST = os.getenv("host")
+PORT = os.getenv("port")
+DBNAME = os.getenv("dbname")
+
+# Connect to the database
+try:
+    connection = psycopg2.connect(
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        dbname=DBNAME
+    )
+    logger.info("Test Connection successful!")
+    
+    # Create a cursor to execute SQL queries
+    cursor = connection.cursor()
+    
+    # Example query
+    cursor.execute("SELECT NOW();")
+    result = cursor.fetchone()
+    logger.info(f"Current Time:{result}")
+
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    logger.info("Test Connection closed.")
+
+except Exception as e:
+    logger.info(f"Failed to connect: {e}")
+
+=======
+>>>>>>> origin/main
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
