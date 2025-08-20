@@ -14,7 +14,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from src.lib.schemas import ParseResponse, HealthResponse, ParseRequest
 from src.utils.schema_parse import SQLSchemaParser
-from src.lib.database import insert_schema
+from src.lib.database import insert_schema, check_schema_exists_by_hash
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,11 +39,15 @@ class SchemaManager:
     """Enhanced schema management with cleanup and validation"""
     
     @staticmethod
-    def generate_schema_id(filename: str, content: str) -> str:
-        """Generate deterministic schema ID based on content hash"""
-        content_hash = hashlib.md5(content.encode()).hexdigest()[:8]
-        timestamp = int(time.time())
-        return f"schema_{content_hash}_{timestamp}"
+    def generate_schema_id(content: str) -> str:
+        """Generate deterministic schema ID based on content hash only"""
+        content_hash = hashlib.md5(content.encode()).hexdigest()
+        return f"schema_{content_hash}"
+    
+    @staticmethod
+    def generate_content_hash(content: str) -> str:
+        """Generate MD5 hash of content for duplicate detection"""
+        return hashlib.md5(content.encode()).hexdigest()
     
     @staticmethod
     def cleanup_old_schemas():
@@ -121,10 +125,11 @@ async def parse_sql_schema(
     
     Enhanced with:
     - File size validation
-    - Content deduplication
+    - Content deduplication based on hash
     - Better error handling
     - Optional disk saving
     - Schema validation
+    - Database duplicate prevention
     """
     global SCHEMA_COUNTER
     start_time = time.time()
@@ -159,15 +164,38 @@ async def parse_sql_schema(
                     detail="File must be valid UTF-8 or Latin-1 encoded text"
                 )
         
-        # Generate schema ID and check for duplicates
-        schema_id = schema_manager.generate_schema_id(file.filename, sql_content)
+        # Generate content hash and schema ID
+        content_hash = schema_manager.generate_content_hash(sql_content)
+        schema_id = schema_manager.generate_schema_id(sql_content)
         
+        # Check if schema already exists in database
+        try:
+            db_duplicate_exists = check_schema_exists_by_hash(content_hash)
+            if db_duplicate_exists and not overwrite_existing:
+                logger.info(f"Schema with hash {content_hash} already exists in database")
+                return ParseResponse(
+                    success=True,
+                    schema_id=schema_id,
+                    message=f"Schema with identical content already exists in database. Use overwrite_existing=true to reprocess.",
+                    processing_time=time.time() - start_time,
+                    statistics={
+                        "content_hash": content_hash,
+                        "duplicate": True,
+                        "duplicate_source": "database"
+                    },
+                    file_path=None
+                )
+        except Exception as db_error:
+            logger.warning(f"Could not check database for duplicates: {db_error}")
+            # Continue processing if database check fails
+        
+        # Check if schema already exists in memory
         if schema_id in PARSED_SCHEMAS and not overwrite_existing:
             existing_schema = PARSED_SCHEMAS[schema_id]
             return ParseResponse(
                 success=True,
                 schema_id=schema_id,
-                message=f"Schema already exists (duplicate content). Use overwrite_existing=true to replace.",
+                message=f"Schema already exists in memory (duplicate content). Use overwrite_existing=true to replace.",
                 processing_time=time.time() - start_time,
                 statistics={
                     "databases": len(existing_schema["schema"].get("databases", [])),
@@ -179,7 +207,9 @@ async def parse_sql_schema(
                     ),
                     "file_size": existing_schema["file_size"],
                     "schema_id": schema_id,
-                    "duplicate": True
+                    "content_hash": content_hash,
+                    "duplicate": True,
+                    "duplicate_source": "memory"
                 },
                 file_path=existing_schema.get("file_path")
             )
@@ -202,7 +232,7 @@ async def parse_sql_schema(
             "filename": file.filename,
             "created_at": time.time(),
             "file_size": len(content),
-            "content_hash": hashlib.md5(sql_content.encode()).hexdigest(),
+            "content_hash": content_hash,
             "metadata": {
                 "upload_timestamp": datetime.now(timezone.utc).isoformat(),
                 "file_extension": Path(file.filename).suffix,
@@ -217,8 +247,8 @@ async def parse_sql_schema(
             schemas_dir = Path("./schemas")
             schemas_dir.mkdir(parents=True, exist_ok=True)
             
-            base_filename = Path(file.filename).stem
-            json_filename = f"{base_filename}_schema_{int(time.time())}.json"
+            # Use content hash for filename to ensure uniqueness
+            json_filename = f"schema_{content_hash}.json"
             json_file_path = schemas_dir / json_filename
             
             try:
@@ -250,7 +280,7 @@ async def parse_sql_schema(
             ),
             "file_size": len(content),
             "schema_id": schema_id,
-            "content_hash": schema_data["content_hash"],
+            "content_hash": content_hash,
             "duplicate": False
         }
         
@@ -265,7 +295,19 @@ async def parse_sql_schema(
         stats["constraint_summary"] = constraint_counts
         
         logger.info(f"Successfully parsed schema {schema_id} in {processing_time:.2f}s")
-        insert_schema()
+        
+        # Insert into database with filename and content hash
+        try:
+            insert_schema(
+                schema_data=schema,
+                filename=file.filename,
+                content_hash=content_hash,
+                file_size=len(content)
+            )
+            logger.info(f"Schema {schema_id} successfully inserted into database")
+        except Exception as db_error:
+            logger.error(f"Failed to insert schema into database: {db_error}")
+            # Don't fail the entire operation if database insertion fails
         
         return ParseResponse(
             success=True,
@@ -455,6 +497,7 @@ async def delete_schema(request: Request, schema_id: str):
         "deleted_schema_info": {
             "filename": deleted_schema["filename"],
             "created_at": deleted_schema["created_at"],
+            "content_hash": deleted_schema.get("content_hash"),
             "file_path": file_path
         }
     }
@@ -475,7 +518,8 @@ async def bulk_delete_schemas(
             deleted_schema = PARSED_SCHEMAS.pop(schema_id)
             deleted_schemas.append({
                 "schema_id": schema_id,
-                "filename": deleted_schema["filename"]
+                "filename": deleted_schema["filename"],
+                "content_hash": deleted_schema.get("content_hash")
             })
             
             # Optionally delete file from disk
