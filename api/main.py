@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         migrator.create_migrations_table()
         
         # Auto-run migrations on startup (optional - you can disable this)
-        auto_migrate_on_startup = True  # Set to False if you want manual control
+        auto_migrate_on_startup = False  # Set to False if you want manual control
         
         if auto_migrate_on_startup:
             logger.info("Running auto-migration on startup...")
