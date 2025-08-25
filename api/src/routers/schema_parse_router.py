@@ -315,6 +315,7 @@ async def parse_sql_schema(
             message=f"Schema parsed and stored successfully. Schema ID: {schema_id}",
             processing_time=processing_time,
             statistics=stats,
+            data=json.dumps(schema),
             file_path=str(json_file_path) if json_file_path else None
         )
         
