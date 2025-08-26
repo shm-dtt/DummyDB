@@ -1,1 +1,4 @@
 schemas/
+venv/
+__pycache__/
+migrations/

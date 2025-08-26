@@ -92,6 +92,7 @@ class ParseResponse(BaseModel):
     message: str
     processing_time: float
     statistics: Dict[str, Any] = {}
+    data: str
     file_path: Optional[str] = None
 
 class HealthResponse(BaseModel):
