@@ -9,7 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, Database, Save, AlertCircle, FileText, Table, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Upload, Database, Save, AlertCircle, FileText, Table, Plus, Trash2, ArrowRight, Archive, BarChart3 } from "lucide-react";
 
 const formSchema = z.object({
   databaseType: z.enum(["sql", "nosql", "graph"]),
@@ -23,8 +24,14 @@ const formSchema = z.object({
     }),
   seedDataFile: z
     .instanceof(File)
-    .refine((file) => file.type === "text/plain" || file.type === "text/csv" || file.name.endsWith('.sql') || file.name.endsWith('.csv'), {
-      message: "Please upload a valid file (.sql or .csv)",
+    .refine((file) => 
+      file.type === "application/zip" || 
+      file.type === "text/plain" || 
+      file.type === "text/csv" || 
+      file.name.endsWith('.zip') || 
+      file.name.endsWith('.sql') || 
+      file.name.endsWith('.csv'), {
+      message: "Please upload a valid file (.zip, .sql, or .csv)",
     })
     .refine((file) => file.size > 0, {
       message: "File cannot be empty",
@@ -80,11 +87,13 @@ export default function GeneratePage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [databaseStructure, setDatabaseStructure] = useState<ApiResponse | null>(null);
-  const [tableEntryCounts, setTableEntryCounts] = useState<Record<string, number>>({});
   const [enableEncryption, setEnableEncryption] = useState(false);
   const [encryptionConfigs, setEncryptionConfigs] = useState<EncryptionConfig[]>([
     { id: "1", tableName: "", attribute: "", algorithm: "" }
   ]);
+  const [hasSeedData, setHasSeedData] = useState(false);
+  const [scaleFactor, setScaleFactor] = useState(1);
+  const [baseSeedDataRows, setBaseSeedDataRows] = useState(10); // Will come from backend later
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -95,13 +104,6 @@ export default function GeneratePage() {
 
   const selectedDbType = form.watch("databaseType");
 
-  const handleTableEntryCountChange = (tableName: string, count: string) => {
-    const numCount = parseInt(count) || 0;
-    setTableEntryCounts(prev => ({
-      ...prev,
-      [tableName]: numCount
-    }));
-  };
 
   const handleEncryptionChange = (id: string, field: keyof EncryptionConfig, value: string) => {
     setEncryptionConfigs(prev => 
@@ -146,6 +148,13 @@ export default function GeneratePage() {
       // Add seed data file if present
       if (data.seedDataFile) {
         formData.append("seed_data_file", data.seedDataFile);
+        setHasSeedData(true);
+        setScaleFactor(1); // Default scale factor, will be adjustable in config step
+        setBaseSeedDataRows(10); // TODO: This will come from backend response
+      } else {
+        setHasSeedData(false);
+        setScaleFactor(1);
+        setBaseSeedDataRows(10);
       }
 
       const response = await fetch(
@@ -168,14 +177,7 @@ export default function GeneratePage() {
         const parsedData = JSON.parse(responseData.data);
         setDatabaseStructure(parsedData);
         
-        // Initialize default entry counts for each table
-        const defaultCounts: Record<string, number> = {};
-        parsedData.databases.forEach((db: Database) => {  // ✅ Use parsedData instead
-          db.tables.forEach((table: Table) => {
-            defaultCounts[table.name] = 10; // Default to 10 entries
-          });
-        });
-        setTableEntryCounts(defaultCounts);
+        // Note: Entry counts are now calculated dynamically based on hasSeedData and scaleFactor
         
         // Move to configuration step
         setCurrentStep("configure");
@@ -196,10 +198,20 @@ export default function GeneratePage() {
     setUploadError(null);
 
     try {
+      // Calculate entry counts for each table based on seed data and scale factor
+      const calculatedEntryCounts: Record<string, number> = {};
+      databaseStructure.databases.forEach((db: Database) => {
+        db.tables.forEach((table: Table) => {
+          calculatedEntryCounts[table.name] = hasSeedData ? baseSeedDataRows * scaleFactor : 10;
+        });
+      });
+
       const generateData = {
         databaseStructure: databaseStructure,
-        tableEntryCounts: tableEntryCounts,
-        encryption: enableEncryption ? encryptionConfigs : null
+        tableEntryCounts: calculatedEntryCounts,
+        encryption: enableEncryption ? encryptionConfigs : null,
+        hasSeedData: hasSeedData,
+        scaleFactor: hasSeedData ? scaleFactor : 1
       };
 
       const response = await fetch(
@@ -221,9 +233,11 @@ export default function GeneratePage() {
       // Reset to first step
       setCurrentStep("upload");
       setDatabaseStructure(null);
-      setTableEntryCounts({});
       setEnableEncryption(false);
       setEncryptionConfigs([{ id: "1", tableName: "", attribute: "", algorithm: "" }]);
+      setHasSeedData(false);
+      setScaleFactor(1);
+      setBaseSeedDataRows(10);
       form.reset();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Data generation failed");
@@ -235,11 +249,13 @@ export default function GeneratePage() {
   const resetToUpload = () => {
     setCurrentStep("upload");
     setDatabaseStructure(null);
-    setTableEntryCounts({});
     setEnableEncryption(false);
     setEncryptionConfigs([{ id: "1", tableName: "", attribute: "", algorithm: "" }]);
     setUploadSuccess(false);
     setUploadError(null);
+    setHasSeedData(false);
+    setScaleFactor(1);
+    setBaseSeedDataRows(10);
     form.reset();
   };
 
@@ -363,13 +379,13 @@ export default function GeneratePage() {
                     render={({ field: { onChange, value, ...field } }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
+                          <Archive className="h-4 w-4" />
                           Seed Data (Optional)
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="file"
-                            accept=".sql,.csv,text/plain,text/csv"
+                            accept=".zip,.sql,.csv,text/plain,text/csv,application/zip"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               onChange(file);
@@ -377,11 +393,15 @@ export default function GeneratePage() {
                             {...field}
                           />
                         </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Upload a ZIP file containing SQL or CSV files, or individual SQL/CSV files
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 )}
+
 
                 {/* Not Supported Message for non-SQL databases */}
                 {selectedDbType !== "sql" && (
@@ -425,6 +445,74 @@ export default function GeneratePage() {
               <div className="text-left">
                 <h2 className="text-2xl font-bold mb-4">Database Structure & Configuration</h2>
                 
+                {/* Data Source Information */}
+                <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Data Source
+                  </h3>
+                  {hasSeedData ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Using seed data with scale factor: <span className="font-semibold text-primary">{scaleFactor}x</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Each table will be populated with <span className="font-semibold text-primary">{baseSeedDataRows * scaleFactor} entries</span> ({baseSeedDataRows} base rows × {scaleFactor} scale factor).
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        No seed data provided - using predetermined entries
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Each table will be populated with <span className="font-semibold text-primary">10 generated entries</span> (fixed, not editable).
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Scale Factor Slider - Only show when seed data is present */}
+                {hasSeedData && (
+                  <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Scale Factor
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 text-sm font-medium">
+                          {scaleFactor}x
+                        </div>
+                        <div className="flex-1 relative">
+                          <Slider
+                            value={[scaleFactor]}
+                            onValueChange={(value) => setScaleFactor(value[0])}
+                            min={1}
+                            max={25}
+                            step={1}
+                            className="w-full"
+                          />
+                          {/* Scale markers */}
+                          <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                            <span>1x</span>
+                            <span>5x</span>
+                            <span>10x</span>
+                            <span>15x</span>
+                            <span>20x</span>
+                            <span>25x</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-background/50 rounded-md px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Scale your seed data by </span>
+                        <span className="font-semibold text-primary">{scaleFactor}x</span>
+                        <span className="text-muted-foreground"> (recommended: up to 25x)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Database Structure Display */}
                 {databaseStructure.databases.map((db, dbIndex) => (
                   <div key={dbIndex} className="mb-6 p-4 border rounded-lg">
@@ -443,13 +531,9 @@ export default function GeneratePage() {
                               <label className="text-sm font-medium">
                                 Number of entries:
                               </label>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={tableEntryCounts[table.name] || 10}
-                                onChange={(e) => handleTableEntryCountChange(table.name, e.target.value)}
-                                className="w-20"
-                              />
+                              <span className="text-sm font-semibold text-primary">
+                                {hasSeedData ? baseSeedDataRows * scaleFactor : 10}
+                              </span>
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground">
